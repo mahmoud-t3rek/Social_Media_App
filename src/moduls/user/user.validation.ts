@@ -1,5 +1,5 @@
 import * as z from "zod";
-import { userRole } from "../../DB/models/user.model";
+import { RoleType } from "../../DB/models/user.model";
 
 export const SignUpSchema = {
   body: z.object({
@@ -17,7 +17,7 @@ export const SignUpSchema = {
         "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character"
       )
       .min(6, { message: "Password must be at least 6 characters long" }),
-    role: z.enum([userRole.admin,userRole.user]),
+    role: z.enum([RoleType.admin,RoleType.user]),
     phone: z.string().regex(/^01[0125][0-9]{8}$/, {
       message: "Your number must be an Egyptian number",
     }),
@@ -27,7 +27,11 @@ export const SignUpSchema = {
       .max(60, { message: "your age must be less than 60" }),
     Cpassword: z
       .string()
-  }),
+  })    .refine((data) => data.password === data.Cpassword, {
+      message: "Passwords do not match",
+      path: ["Cpassword"], 
+    }),
+
 };
 
 export type userRoleValid = z.infer<typeof SignUpSchema.body>;
