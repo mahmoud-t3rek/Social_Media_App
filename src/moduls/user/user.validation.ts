@@ -1,12 +1,17 @@
 import * as z from "zod";
-import { RoleType } from "../../DB/models/user.model";
+import { GenderType, RoleType } from "../../DB/models/user.model";
 
 export const SignUpSchema = {
   body: z.object({
-    name: z
+    fName: z
       .string()
       .min(3, { message: "Name must be at least 3 characters long" })
       .trim(),
+      lName: z
+      .string()
+      .min(3, { message: "Name must be at least 3 characters long" })
+      .trim(),
+       address: z.string().trim(),
 
     email: z.string().email({ message: "Invalid email address" }),
 
@@ -18,6 +23,7 @@ export const SignUpSchema = {
       )
       .min(6, { message: "Password must be at least 6 characters long" }),
     role: z.enum([RoleType.admin,RoleType.user]),
+    gender: z.enum([GenderType.male,GenderType.female]),
     phone: z.string().regex(/^01[0125][0-9]{8}$/, {
       message: "Your number must be an Egyptian number",
     }),

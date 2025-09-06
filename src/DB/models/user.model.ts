@@ -19,7 +19,7 @@ export interface Iuser{
   age:number,
   address?:string,
   gender?:GenderType,
-  Role?:RoleType,
+  role?:RoleType,
   createdAt:string,
   updatedAt:string
 }
@@ -34,7 +34,7 @@ const userSchema=new mongoose.Schema<Iuser>({
   age:{type:Number,required:true},
   address:{type:String},
   gender:{type:String,enum:GenderType,required:true},
-  Role:{type:String,enum:RoleType,default:RoleType.user},
+  role:{type:String,enum:RoleType,default:RoleType.user},
 },{
   timestamps:true,
   toJSON:{virtuals:true},

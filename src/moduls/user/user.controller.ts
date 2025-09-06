@@ -7,7 +7,7 @@ const UserRouter=Router()
 
 
 UserRouter.post("/signup",Validation(SignUpSchema),US.signUp)
-UserRouter.post("/signup",US.signIn)
+UserRouter.post("/signin",US.signIn)
 
 
 export default UserRouter

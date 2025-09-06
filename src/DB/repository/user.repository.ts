@@ -14,4 +14,14 @@ async createUser(data:Partial<Iuser>):Promise<HydratedDocument<Iuser>>{
         throw new AppError("faild created",400);
     }
 return user
-}}
+}
+ async checkEmail(email: string): Promise<void> {
+  if (await this.findByEmail({email})) {
+    throw new AppError("Email already exists", 400);
+  }
+}
+
+
+
+
+}
