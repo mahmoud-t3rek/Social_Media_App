@@ -1,4 +1,4 @@
-import { HydratedDocument, Model, ProjectionType, RootFilterQuery } from "mongoose";
+import { HydratedDocument, Model, ProjectionType, RootFilterQuery, UpdateQuery, UpdateResult } from "mongoose";
 
 
 
@@ -12,5 +12,8 @@ export class DBRepository<TDocument>{
     }
     async findByEmail(filter:RootFilterQuery<TDocument>,select?:ProjectionType<TDocument>): Promise<HydratedDocument<TDocument> | null> {
         return await this.model.findOne(filter,select);
+      }
+       async UpdateOne(filter:RootFilterQuery<TDocument>,update: UpdateQuery<TDocument>): Promise<UpdateResult | null> {
+        return await this.model.updateOne(filter,update); 
       }
 }

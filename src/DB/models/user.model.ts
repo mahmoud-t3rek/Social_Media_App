@@ -19,7 +19,10 @@ export interface Iuser{
   age:number,
   address?:string,
   gender?:GenderType,
+  otp?:string,
+  confirmed:boolean,
   role?:RoleType,
+  changeCardnality?:Date,
   createdAt:string,
   updatedAt:string
 }
@@ -31,6 +34,9 @@ const userSchema=new mongoose.Schema<Iuser>({
   email:{type:String,required:true,trim:true,unique:true},
   password:{type:String,required:true},
   phone:{type:String},
+  otp:{type:String},
+  confirmed:{type:Boolean},
+  changeCardnality:{type:Date},
   age:{type:Number,required:true},
   address:{type:String},
   gender:{type:String,enum:GenderType,required:true},
