@@ -1,4 +1,5 @@
 import mongoose, { Types } from 'mongoose';
+
 export enum GenderType{
   male="male",
   female="female"
@@ -23,8 +24,10 @@ export interface Iuser{
   confirmed:boolean,
   role?:RoleType,
   changeCardnality?:Date,
+  otpExp:Date,
   createdAt:string,
-  updatedAt:string
+  updatedAt:string,
+  stepVerification:boolean
 }
 
 
@@ -35,10 +38,12 @@ const userSchema=new mongoose.Schema<Iuser>({
   password:{type:String,required:true},
   phone:{type:String},
   otp:{type:String},
+  otpExp:{type:Date},
   confirmed:{type:Boolean},
   changeCardnality:{type:Date},
   age:{type:Number,required:true},
   address:{type:String},
+  stepVerification:{type:Boolean,default:false},
   gender:{type:String,enum:GenderType,required:true},
   role:{type:String,enum:RoleType,default:RoleType.user},
 },{

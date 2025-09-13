@@ -1,9 +1,9 @@
 import jwt, { JwtPayload } from 'jsonwebtoken';
-import { AppError } from '../utils/ClassError';
-import { UserReposotry } from '../DB/repository/user.repository';
-import userModel from '../DB/models/user.model';
-import { RevokeTokenReposotry } from '../DB/repository/RevokeToken.repository';
-import RevokeTokenModel from '../DB/models/RevokeToken.model';
+import { AppError } from '../../utils/ClassError';
+import { UserReposotry } from '../../DB/repository/user.repository';
+import userModel from '../../DB/models/user.model';
+import { RevokeTokenReposotry } from '../../DB/repository/RevokeToken.repository';
+import RevokeTokenModel from '../../DB/models/RevokeToken.model';
 
 const _RovekeToken=new RevokeTokenReposotry(RevokeTokenModel)
 
@@ -43,6 +43,8 @@ export const GetSignutre=(tokenType:TokenType,prefix:string)=>{
         return null
        }
     }
+    
+    
      if(tokenType==TokenType.refresh){
        if(prefix=="bearer"){
         return process.env.REFRESCH_TOKENUSER
@@ -54,8 +56,8 @@ export const GetSignutre=(tokenType:TokenType,prefix:string)=>{
     }
     return null
 }
-export const Decoded_Token=async(token:string,signature:string)=>{
-    const decoded=await verifyToken({token,signature})
+export const Decoded_Token=async(token:string,signature:string)=>{  
+  const decoded=await verifyToken({token,signature})
 if(!decoded || !decoded.email){
 throw new AppError("Invalid token payload", 401)
 }
@@ -77,6 +79,7 @@ if(await _RovekeToken.findByEmail({TokenId: decoded?.jti})){
 if(user?.changeCardnality?.getTime()! > decoded.iat! * 1000){
 throw new AppError("token has been revoked",401);
 }
+ 
 return {decoded,user}
 
 }
