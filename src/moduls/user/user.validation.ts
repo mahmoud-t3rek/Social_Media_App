@@ -51,6 +51,15 @@ export const UpdateEmailSchema = {
         email: z.string().email({ message: "Invalid email address" }),
   })
 }
+export const forgetpasswordSchema = {
+  body:UpdateEmailSchema.body.extend({})
+}
+
+export const LoginWithEmailSchema = {
+  body:z.object({
+        idToken: z.string(),
+  })
+}
 
 export const UpdatePasswordSchema={
   body:z.object({
@@ -59,6 +68,13 @@ export const UpdatePasswordSchema={
       .min(6, { message: "Password must be at least 6 characters long" }),
       Cpassword: z.string()
   }).refine((data) => data.password === data.Cpassword, {message: "Passwords do not match",path: ["Cpassword"], })
+}
+export const ResetPasswordSchema={
+  body: UpdatePasswordSchema.body.safeExtend({
+    email: z.string().email({ message: "Invalid email address" }),
+     otp:z.string().length(6, { message: "OTP must be 6 digits" })
+  })
+  
 }
 
 export const ConfirmEmailSchema = {
@@ -85,3 +101,6 @@ export type UpdatePasswordSchemaType = z.infer<typeof UpdatePasswordSchema.body>
 export type UpdateInfoSchemaType = z.infer<typeof UpdateInfoSchema.body>;
 export type UpdateEmailSchemaType = z.infer<typeof UpdateEmailSchema.body>;
 export type Enable_STSchemaSchemaType = z.infer<typeof Enable_STSchema.body>;
+export type LoginWithEmailSchemaType = z.infer<typeof LoginWithEmailSchema.body>;
+export type forgetpasswordSchemaType = z.infer<typeof forgetpasswordSchema.body>;
+export type ResetPasswordSchemaType = z.infer<typeof ResetPasswordSchema.body>;

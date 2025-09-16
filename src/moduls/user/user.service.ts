@@ -1,6 +1,6 @@
 import { NextFunction,Response,Request } from "express";
 import * as UV from "./user.validation";
-import userModel, { GenderType, Iuser, RoleType } from "../../DB/models/user.model";
+import userModel, { GenderType, Iuser, ProviderType, RoleType } from "../../DB/models/user.model";
 import { UserReposotry } from "../../DB/repository/user.repository";
 import { Compare, Hash } from "../../utils/hashPassword";
 import { AppError } from "../../utils/ClassError";
@@ -14,6 +14,8 @@ import RevokeTokenModel from "../../DB/models/RevokeToken.model";
 import { GenerateTokens } from "../../services/Token/GenreteToken";
 import PostModel from "../../DB/models/post.model";
 import { PostReposotry } from "../../DB/repository/Post.repository";
+import { OAuth2Client, TokenPayload } from "google-auth-library";
+import { createUrlRequestPresigner, uploadFile, UploadFiles, UploadLargeFile } from "../../utils/S3config";
 
 class UserService{
     private _userModel=new UserReposotry(userModel)
@@ -26,7 +28,10 @@ signUp=async(req: Request, res: Response, next: NextFunction)=>{
 
    const {fName,lName,email,password,Cpassword,age,role,gender,address,phone}:UV.SignUpSchemaType=req.body
 
-   await this._userModel.checkEmail(email)
+    const finduser=await this._userModel.findOne({email})
+  if (finduser) {
+    throw new AppError("Email already exists", 400);
+  }
 
 
 
@@ -35,7 +40,7 @@ signUp=async(req: Request, res: Response, next: NextFunction)=>{
  const otp= await CreateOTP()
  const hashotp=await Hash(String(otp))
 
-  const user=await this._userModel.createUser({fName,lName,email,otp:hashotp,password:hash,age,phone:crypt,role,gender,address})
+  const user=await this._userModel.createUser({fName,lName,email,otp:hashotp,password:hash,age,phone:crypt,role,gender,address,provider:ProviderType.system})
   if(!user)throw new AppError("faild create",400)
     eventEmitter.emit("confirm email",{email,otp})
 
@@ -60,7 +65,10 @@ confirmEmail= async(req: Request, res: Response, next: NextFunction)=>{
 //============================SignIn===================================================
 signIn=async(req: Request, res: Response, next: NextFunction)=>{
  const {email,password}:UV.SignInSchemaType=req.body
- const user=await this._userModel.findOne({email,confirmed:true})
+ const user=await this._userModel.findOne({email,confirmed:{$exists:true},provider:ProviderType.system})
+ if(!user?.confirmed===true){
+  throw new AppError("email not confirmed",400);
+ }
  if(!user || !await Compare(password,user?.password)){
     throw new AppError("Invalid email or password",400);
   }
@@ -177,7 +185,10 @@ updateEmail = async (req: Request, res: Response, next: NextFunction) => {
   const user = req.user;
   const {email}: UV.UpdateEmailSchemaType = req.body;
    
-  await this._userModel.checkEmail(email)
+   const finduser=await this._userModel.findOne({email})
+  if (finduser) {
+    throw new AppError("Email already exists", 400);
+  }
  const otp= await CreateOTP()
  const hashotp=await Hash(String(otp))
   if(user?.email==email){
@@ -226,6 +237,88 @@ confirmStep_Verification = async (req: Request, res: Response, next: NextFunctio
 res.status(200).json({ message: "success LogIn", ...tokens });
 }
 
+LoginWithGmail=async(req: Request, res: Response, next: NextFunction)=>{
+  const {idToken}:UV.LoginWithEmailSchemaType=req.body
+   
+const client = new OAuth2Client();
+async function verify() {
+  const ticket = await client.verifyIdToken({
+      idToken,
+      audience: process.env.WEB_CLIENT_ID!, 
+      
+  });
+  const payload = ticket.getPayload();
+  
+  return payload
+  
+}
+
+
+const {email,name,email_verified,picture}=await verify() as TokenPayload
+
+
+let user = await this._userModel.findOne({ email:email });
+
+
+if (!user) {
+  user = await this._userModel.create({
+    email:email!,
+    image: picture!,
+    userName: name!,
+    confirmed: email_verified!,
+    provider: ProviderType.Google,
+  });
+
+}
+
+if (user.provider === ProviderType.system) {
+  throw new AppError("you must login on system", 400);
+}
+
+const tokens = await GenerateTokens(user);
+return res.status(200).json({ message: "success LogIn", ...tokens });
+}
+
+forgetPassword=async(req: Request, res: Response, next: NextFunction)=>{
+  const {email}:UV.forgetpasswordSchemaType=req.body
+ const user=await this._userModel.findOne({email,confirmed:{$exists:true}})
+ if(!user){
+  throw new AppError("email not exist or not confirmed",400);
+  
+ }
+ const otp= await CreateOTP()
+ const hashotp=await Hash(String(otp))
+user!.otp=hashotp
+
+await user!.save()
+eventEmitter.emit("forgetpassword",{email,otp})
+
+return res.status(200).json({ message: "please check your email"});
+}
+resetPassword=async(req: Request, res: Response, next: NextFunction)=>{
+  const {password,Cpassword,email,otp}:UV.ResetPasswordSchemaType=req.body
+  const user=await this._userModel.findOne({email,otp:{$exists:true}})
+  if(!user){
+  throw new AppError("email not exist or otp expire ",400);
+  }
+if(!await Compare(otp,user.otp!)){
+throw new AppError("Invalid Otp",400);
+}
+const hashPassword=await Hash(password)
+
+const updatePassword=await this._userModel.updateOne({email},{password:hashPassword,$unset:{otp:""}})
+  
+return res.status(200).json({ message: "your password has been changed"});
+}
+
+uploadimage=async(req: Request, res: Response, next: NextFunction)=>{
+  const {ContentType,originalname}=req.body
+const key=await createUrlRequestPresigner({
+ContentType,originalname
+
+})
+return res.status(200).json({message:"success", key});
+}
 
 
 }

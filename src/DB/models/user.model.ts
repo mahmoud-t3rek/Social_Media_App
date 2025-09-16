@@ -8,6 +8,10 @@ export enum RoleType {
   user="user",
   admin = "admin"
 }
+export enum ProviderType {
+  Google="Google",
+  system = "system"
+}
 
 export interface Iuser{
   _id:Types.ObjectId,
@@ -18,7 +22,9 @@ export interface Iuser{
   password:string,
   phone?:string,
   age:number,
+  provider:ProviderType
   address?:string,
+  image?:string,
   gender?:GenderType,
   otp?:string,
   confirmed:boolean,
@@ -35,18 +41,23 @@ const userSchema=new mongoose.Schema<Iuser>({
   fName:{type:String,required:true,trim:true,minLength:3,maxLength:10},
   lName:{type:String,required:true,trim:true,minLength:3,maxLength:10},
   email:{type:String,required:true,trim:true,unique:true},
-  password:{type:String,required:true},
+  password:{type:String,required:function(){
+    return this.provider===ProviderType.Google ? false : true 
+  }},
   phone:{type:String},
   otp:{type:String},
   otpExp:{type:Date},
   confirmed:{type:Boolean},
   changeCardnality:{type:Date},
-  age:{type:Number,required:true},
+  age:{type:Number,required:function(){
+    return this.provider===ProviderType.Google ? false : true }},
   address:{type:String},
+  provider:{type:String,enum:ProviderType,default:ProviderType.system},
   stepVerification:{type:Boolean,default:false},
-  gender:{type:String,enum:GenderType,required:true},
+  gender:{type:String,enum:GenderType,required:function(){
+    return this.provider===ProviderType.Google ? false : true }},
   role:{type:String,enum:RoleType,default:RoleType.user},
-},{
+},{  
   timestamps:true,
   toJSON:{virtuals:true},
   toObject:{virtuals:true}

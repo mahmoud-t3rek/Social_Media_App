@@ -62,7 +62,7 @@ if(!decoded || !decoded.email){
 throw new AppError("Invalid token payload", 401)
 }
 
-const user=await _userModel.findByEmail({email:decoded?.email})
+const user=await _userModel.findOne({email:decoded?.email})
 
 if(!user){
     throw new AppError("email not exist",400);
@@ -73,7 +73,7 @@ if(!user?.confirmed){
 console.log(decoded.jti);
 
 
-if(await _RovekeToken.findByEmail({TokenId: decoded?.jti})){
+if(await _RovekeToken.findOne({TokenId: decoded?.jti})){
   throw new AppError("token has been revoked",401);
 }
 if(user?.changeCardnality?.getTime()! > decoded.iat! * 1000){
