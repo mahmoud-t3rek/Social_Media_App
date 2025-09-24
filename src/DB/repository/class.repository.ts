@@ -23,4 +23,7 @@ export class DBRepository<TDocument>{
        async findByIdAndUpdate(  id?: string | Types.ObjectId,update?: UpdateQuery<TDocument>,options?: QueryOptions<TDocument> | null):  Promise<TDocument | null> {
         return await this.model.findByIdAndUpdate(id,update,options); 
       }
+       async findOneAndUpdate(  filter: RootFilterQuery<TDocument>,update?: UpdateQuery<TDocument>,options?: QueryOptions<TDocument> | null):  Promise<TDocument | null> {
+        return await this.model.findOneAndUpdate(filter,update,options); 
+      }
 }

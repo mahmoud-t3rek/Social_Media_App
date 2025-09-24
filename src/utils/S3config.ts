@@ -1,4 +1,4 @@
-import {ObjectCannedACL, PutObjectCommand, S3Client} from '@aws-sdk/client-s3';
+import {DeleteObjectCommand, DeleteObjectsCommand, GetObjectCommand, ListObjectsV2Command, ObjectCannedACL, PutObjectCommand, S3Client} from '@aws-sdk/client-s3';
 import { storageType } from '../middleware/Multer';
 import { uuidv4 } from 'zod';
 import { createReadStream } from "fs";
@@ -129,4 +129,95 @@ originalname:string
     return url
 
 
+}
+
+export const Get_File=async({
+    Bucket=process.env.AWS_BUCKETNAME!,
+    Key
+}:{
+Key:string
+Bucket?:string
+})=>{
+
+
+    const command=new GetObjectCommand({
+        Bucket,
+        Key
+    })   
+    return await s3Client().send(command)
+}
+
+export const getUrlRequestPresigner=async({
+    Bucket=process.env.AWS_BUCKETNAME!,
+    Key,
+    downloadName
+}:{
+Key:string
+Bucket?:string
+downloadName:string | undefined
+
+})=>{
+
+
+    const command=new PutObjectCommand({
+        Bucket,
+        Key,
+        ContentDisposition: downloadName?`attachment; filename="${downloadName}"`:undefined
+    })
+    const url = await getSignedUrl(s3Client(), command, { expiresIn: 60 * 60 });
+    return url
+
+
+}
+
+export const deleteFile=async({
+    Bucket=process.env.AWS_BUCKETNAME!,
+    Key,
+}:{
+Key:string
+Bucket?:string
+})=>{
+
+ const command =new DeleteObjectCommand({
+        Bucket,
+        Key
+    })
+    return await s3Client().send(command)
+}
+export const deleteFiles=async({
+    Bucket=process.env.AWS_BUCKETNAME!,
+    urls,
+    Quiet=false
+}:{
+urls:string[]
+Bucket?:string
+Quiet?:boolean
+})=>{
+
+ const command =new DeleteObjectsCommand({
+      Bucket,
+        Delete:{
+            Objects: urls.map(url=>({Key:url})),
+            Quiet
+        },
+        
+    })
+    return await s3Client().send(command)
+}
+
+export const ListFile=async({
+    Bucket=process.env.AWS_BUCKETNAME!,
+    path,
+
+}:{
+path:string
+Bucket?:string
+})=>{
+
+ const command =new ListObjectsV2Command({
+      Bucket,
+       Prefix:`${process.env.APLICATION_NAME}/${path}`
+        
+    })
+    return await s3Client().send(command)
 }

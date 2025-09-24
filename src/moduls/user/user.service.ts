@@ -311,13 +311,58 @@ const updatePassword=await this._userModel.updateOne({email},{password:hashPassw
 return res.status(200).json({ message: "your password has been changed"});
 }
 
-uploadimage=async(req: Request, res: Response, next: NextFunction)=>{
-  const {ContentType,originalname}=req.body
+uploadProfileImage=async(req: Request, res: Response, next: NextFunction)=>{
+const {ContentType,originalname}=req.body
 const key=await createUrlRequestPresigner({
+  path:`users/${req.user?._id}/coverImages`,
 ContentType,originalname
 
 })
+const finduser=await this._userModel.findOneAndUpdate({_id:req.user?._id},
+  {
+    $set:{
+      profileImage:key,
+      tempProfileImage:req.user?.profileImage
+    }
+  }
+)
+if(!finduser){
+  throw new AppError("faild upload image",400);
+}
+eventEmitter.emit("uploadProfileImage",{userId:req.user?._id,oldkey:req.user?.profileImage,key,expireIn:60})
 return res.status(200).json({message:"success", key});
+}
+UnfreezeAccount=async(req: Request, res: Response, next: NextFunction)=>{
+const user=req.user
+ const id = req.params.id;
+
+if( user?.role !== "admin"){
+throw new AppError("Not authorized to unfreeze this profile",403);
+}
+  const UpdateUser = await this._userModel.updateOne(
+    { _id: id, isDeleted: { $exists: true } },
+    {  $unset: { deletedBy: "", isDeleted: "" } }
+  );
+  if(!UpdateUser){
+    throw new AppError("Fail to unfreeze",400);
+  }
+  res.status(200).json({ message: "Account has been Unfrozen successfully" })
+}
+freezeAccount=async(req: Request, res: Response, next: NextFunction)=>{
+const user=req.user
+ const id = req.params.id;
+
+if(user?._id.toString() !== id && user?.role !== "admin"){
+throw new AppError("Not authorized to freeze this profile",403);
+}
+  const UpdateUser = await this._userModel.updateOne(
+    { _id: id, isDeleted: { $exists: false } },
+    { isDeleted: true, deletedBy: user?._id }
+  );
+  if(!UpdateUser){
+    throw new AppError("faild updateAccount",400);
+  }
+  res.status(200).json({ message: "Account has been frozen successfully" })
 }
 
 

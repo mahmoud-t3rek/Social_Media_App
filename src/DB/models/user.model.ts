@@ -1,4 +1,5 @@
 import mongoose, { Types } from 'mongoose';
+import { boolean, string } from 'zod';
 
 export enum GenderType{
   male="male",
@@ -30,6 +31,10 @@ export interface Iuser{
   confirmed:boolean,
   role?:RoleType,
   changeCardnality?:Date,
+  profileImage:string,
+  tempProfileImage:string,
+  isDeleted:boolean,
+  deletedBy:Types.ObjectId,
   otpExp:Date,
   createdAt:string,
   updatedAt:string,
@@ -45,6 +50,10 @@ const userSchema=new mongoose.Schema<Iuser>({
     return this.provider===ProviderType.Google ? false : true 
   }},
   phone:{type:String},
+  isDeleted:{type:Boolean},
+  deletedBy:{ type: mongoose.Schema.Types.ObjectId, ref: 'User'},
+  tempProfileImage:{type:String},
+  profileImage:{type:String},
   otp:{type:String},
   otpExp:{type:Date},
   confirmed:{type:Boolean},

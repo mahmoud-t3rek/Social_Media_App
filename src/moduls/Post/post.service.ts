@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express"
-import PostModel from "../../DB/models/post.model"
+import PostModel, { IComment, IReplay } from "../../DB/models/post.model"
 import RevokeTokenModel from "../../DB/models/RevokeToken.model"
-import userModel from "../../DB/models/user.model"
+import userModel, { RoleType } from "../../DB/models/user.model"
 import { PostReposotry } from "../../DB/repository/Post.repository"
 import { RevokeTokenReposotry } from "../../DB/repository/RevokeToken.repository"
 import { UserReposotry } from "../../DB/repository/user.repository"
@@ -19,7 +19,8 @@ export class PostService{
     constructor(){}
 
 createPost=async (req: Request, res: Response, next: NextFunction) => {
-  const{userId,post,content}:PV.CreatePostSchemaType=req.body
+  const{post,content}:PV.CreatePostSchemaType=req.body
+  const userId=req.user?._id as Types.ObjectId| string 
    const user = await this._userModel.findOne({_id:userId});
     if (!user) {
       throw new AppError("User not found", 404);
@@ -33,9 +34,12 @@ createPost=async (req: Request, res: Response, next: NextFunction) => {
 }
 
 likeAndUnLike = async (req: Request, res: Response, next: NextFunction) => {
-  const {userId,action}:PV.LikeAndULikeSchemabodyType = req.body
+ const userId=req.user?._id as Types.ObjectId| string 
+   const {action}:PV.LikeAndULikeSchemabodyType = req.body
   const {postId}: PV.LikeAndULikeSchemaparamsType = req.params as PV.LikeAndULikeSchemaparamsType
     const user = await this._userModel.findOne({_id:userId});
+  
+    
     if (!user) {
       throw new AppError("User not found", 404);
     }
@@ -52,7 +56,132 @@ likeAndUnLike = async (req: Request, res: Response, next: NextFunction) => {
 
    res.status(200).json({message: `Success ${action}`,likesCount: updatedPost.likes.length});
 }
+createComment=async (req: Request, res: Response, next: NextFunction) => {
+const {text}:PV.createCommentSchemaType=req.body
+const {postId}:PV.CommentParamsSchemaType=req.params as PV.CommentParamsSchemaType
+const userId=req.user!._id
+const findPost=await this._Postmodel.findOne({_id:postId})
+if(!findPost){
+  throw new AppError("no post found",404)
 }
+
+findPost.comments.push({userId,text})
+await findPost.save();
+
+ res.status(201).json({message:"success create comment", post: findPost});
+
+
+}
+
+getcomments=async (req: Request, res: Response, next: NextFunction) => {
+const {postId}:PV.CommentParamsSchemaType=req.params as PV.CommentParamsSchemaType
+const user=req.user
+
+const post=await this._Postmodel.findOne({_id:postId})
+if(!post){
+  throw new AppError("post not found",404);
+}
+
+if(post.userId.toString()!=user?._id.toString()){
+   throw new AppError("you are not authouraized",400);
+}
+const comments=post.comments
+
+res.status(200).json({message:"done",comments})
+
+
+
+
+}
+
+ReplayToComment=async (req: Request, res: Response, next: NextFunction) => {
+const {postId,commentId}:PV.ReplayCommentParamsSchemaType=req.params as PV.ReplayCommentParamsSchemaType
+const {text}:PV.ReplayCommentbodySchemaType=req.body
+const user=req.user
+const post=await this._Postmodel.findOne({_id:postId})
+if(!post){
+  throw new AppError("post not found",404);
+}
+const comments=post.comments
+const comment = comments.find((key: IComment) => key._id!.toString() === commentId)
+if(!comment){
+   throw new AppError("comment not found",404);
+}
+
+ comment.replays?.push({userId:user?._id!,text})
+
+
+await post.save()
+
+
+res.status(200).json({message:"done",comment})
+
+}
+DeleteReplayComment=async (req: Request, res: Response, next: NextFunction) => {
+const {postId,commentId,replayId}:PV.deleteReplayCommentSchemaType=req.params as PV.deleteReplayCommentSchemaType
+const user=req.user
+const post=await this._Postmodel.findOne({_id:postId})
+if(!post){
+  throw new AppError("post not found",404);
+}
+const comments=post.comments
+const comment = comments.find((key: IComment) => key._id!.toString() === commentId)
+if(!comment){
+   throw new AppError("comment not found",404);
+}
+const replays=comment.replays
+const replay = replays!.find((key: IReplay) => key._id!.toString() === replayId)
+if(!replay){
+   throw new AppError("replay not found",404);
+}
+const isReplayOwner = user?._id?.toString() === replay.userId.toString();
+const isCommentOwner = user?._id?.toString() === comment.userId.toString();
+const isAdmin = user?.role === RoleType.admin;
+const isPostOwner = user?._id?.toString() === post.userId.toString();
+
+if (!(isReplayOwner || isCommentOwner || isAdmin || isPostOwner)) {
+  throw new AppError("You are not authorized to delete this comment", 403);
+}
+
+comment.replays= comment.replays!.filter((key) => key._id?.toString() !== replayId)
+await post.save()
+
+ res.status(200).json({ message: "Replay deleted successfully" });
+
+}
+DeleteComment=async (req: Request, res: Response, next: NextFunction) => {
+const {postId,commentId}:PV.deleteCommentSchemaType=req.params as PV.deleteCommentSchemaType
+const user=req.user
+
+const post=await this._Postmodel.findOne({_id:postId})
+if(!post){
+  throw new AppError("post not found",404);
+}
+const comments=post.comments
+const comment = comments.find((key: IComment) => key._id!.toString() === commentId)
+if(!comment){
+   throw new AppError("comment not found",404);
+}
+const isCommentOwner = user?._id?.toString() === comment.userId.toString();
+const isAdmin = user?.role === RoleType.admin;
+const isPostOwner = user?._id?.toString() === post.userId.toString();
+
+if (!(isCommentOwner || isAdmin || isPostOwner)) {
+  throw new AppError("You are not authorized to delete this comment", 403);
+}
+
+post.comments = post.comments.filter((key) => key._id?.toString() !== commentId)
+await post.save()
+
+ res.status(200).json({ message: "Comment deleted successfully" });
+
+}
+
+
+}
+
+
+
 
 export default new PostService()
 

@@ -7,7 +7,11 @@ import { AppError } from "./utils/ClassError";
 import ConnectionDB from "./DB/connectionDB";
 import UserRouter from "./moduls/user/user.controller";
 import PostRouter from "./moduls/Post/Post.controller";
+import { Get_File, getUrlRequestPresigner } from "./utils/S3config";
+import { pipeline } from "nodemailer/lib/xoauth2";
+import {promisify} from "node:util"
 
+const writepipelline=promisify(pipeline)
 
 export const bootstrap = (app: Application) => {
   app.use(express.json());
@@ -20,6 +24,19 @@ export const bootstrap = (app: Application) => {
   app.get("/", (req: Request, res: Response, next: NextFunction) =>
     res.status(200).json({ message: "Welcome to my app.................✌️💙" })
   );
+  app.get("/upload/pre_signed/*path",async (req: Request, res: Response, next: NextFunction)=>{
+    const {path}=req.params as unknown as {path:string[]}
+    const {downloadName}=req.query as { downloadName: string };
+    const Key=path.join("/")
+    const final=await getUrlRequestPresigner({
+      Key,
+      downloadName:downloadName || undefined
+    })
+    
+    res.status(200).json({ message: "Success",final })
+  
+    
+  })
   
   app.use(GlobalErrorHandling)
 

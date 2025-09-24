@@ -23,7 +23,9 @@ UserRouter.patch("/updateInfo",Authountcation(),Validation(UV.UpdateInfoSchema),
 UserRouter.patch("/updateEmail",Authountcation(),Validation(UV.UpdateEmailSchema),US.updateEmail)
 UserRouter.post("/forgetpassword",Validation(UV.forgetpasswordSchema),US.forgetPassword)
 UserRouter.patch("/resetpassword",Validation(UV.ResetPasswordSchema),US.resetPassword)
-UserRouter.post("/uploadimage",Authountcation(),MulterCloud({fileTypes:fileValidation.image}).array("files"),US.uploadimage)
+UserRouter.post("/uploadimage",Authountcation(),MulterCloud({fileTypes:fileValidation.image}).array("files"),US.uploadProfileImage)
+UserRouter.post("/frezzeaccount/:id",Authountcation(),US.freezeAccount)
+UserRouter.post("/unfrezzeaccount/:id",Authountcation(),US.UnfreezeAccount)
 
 
 
