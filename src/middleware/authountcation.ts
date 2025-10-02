@@ -17,7 +17,6 @@ export const Authountcation=(tokentype:T.TokenType=T.TokenType.access)=>{
     throw new AppError("Invalid Token",400);    
    }
    const signature=await T.GetSignutre(tokentype,prefix)
-     console.log(signature);
    if(!signature){
     throw new AppError("Invalid signture", 400 );  
    }

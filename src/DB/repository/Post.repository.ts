@@ -1,7 +1,7 @@
 import {  Model } from "mongoose";
 import { DBRepository } from "./class.repository";
 
-import { IPost, IComment } from "../models/post.model";
+import { IPost } from "../models/post.model";
 
 
 export class PostReposotry extends DBRepository<IPost>{

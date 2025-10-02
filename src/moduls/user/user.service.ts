@@ -350,7 +350,7 @@ throw new AppError("Not authorized to unfreeze this profile",403);
 }
 freezeAccount=async(req: Request, res: Response, next: NextFunction)=>{
 const user=req.user
- const id = req.params.id;
+const id = req.params.id;
 
 if(user?._id.toString() !== id && user?.role !== "admin"){
 throw new AppError("Not authorized to freeze this profile",403);

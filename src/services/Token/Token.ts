@@ -70,7 +70,6 @@ if(!user){
 if(!user?.confirmed){
     throw new AppError("please confirm your email",400);
 }
-console.log(decoded.jti);
 
 
 if(await _RovekeToken.findOne({TokenId: decoded?.jti})){

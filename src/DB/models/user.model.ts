@@ -23,6 +23,7 @@ export interface Iuser{
   password:string,
   phone?:string,
   age:number,
+  friends?: Types.ObjectId[]
   provider:ProviderType
   address?:string,
   image?:string,
@@ -58,6 +59,7 @@ const userSchema=new mongoose.Schema<Iuser>({
   otpExp:{type:Date},
   confirmed:{type:Boolean},
   changeCardnality:{type:Date},
+  friends: [{ type: mongoose.Schema.Types.ObjectId, ref: "user" }],
   age:{type:Number,required:function(){
     return this.provider===ProviderType.Google ? false : true }},
   address:{type:String},

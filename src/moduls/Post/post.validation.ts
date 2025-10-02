@@ -1,4 +1,7 @@
 import z from "zod";
+import { AllowComment, Availability } from "../../DB/models/post.model";
+import mongoose, { Schema } from "mongoose";
+import { GenralRoles } from "../../utils/genralRoles";
 
 
 
@@ -6,16 +9,50 @@ export  enum likeType{
   like="like",
   unlike="unlike"
 }
-const commentSchema = z.object({
-  userId: z.string().nonempty("userId is required").regex(/^[0-9a-fA-F]{24}$/, "Invalid ObjectId"),
-  text: z.string().nonempty("Comment text is required"),
-  createdAt: z.date().optional(), 
-});
 
 export const CreatePostSchema = {
   body:z.object({
-        post:z.string().nonempty("post is required"),
-        content: z.string().nonempty("Content is required")
+        content: z.string().nonempty("Content is required").max(2000).min(5).optional(),
+        attachments:z.array(GenralRoles.file).max(2).optional(),
+        assetFolderId:z.string().optional(),
+        allowComment:z.enum(AllowComment).default(AllowComment.any).optional(),
+        availability:z.enum(Availability).default(Availability.public).optional(),
+        tags:z.array(GenralRoles.id).refine((value)=>{
+          return new Set(value).size===value?.length
+        },
+      {
+        message:"dublicate mention"
+      }).optional()
+    }).superRefine((data,ctx)=>{
+      if(!data.content && !data.attachments){
+        ctx.addIssue({
+          code:"custom",
+          path:["content"],
+          message:"content or attachments you must send content at least"
+        })
+      }
+    })
+  }
+  export const updatePostSchema = {
+  body:z.object({
+        content: z.string().nonempty("Content is required").max(2000).min(5).optional(),
+        attachments:z.array(GenralRoles.file).max(2).optional(),
+        assetFolderId:z.string().optional(),
+        allowComment:z.enum(AllowComment).default(AllowComment.any).optional(),
+        availability:z.enum(Availability).default(Availability.public).optional(),
+        tags:z.array(GenralRoles.id).refine((value)=>{
+          return new Set(value).size===value?.length
+        },
+      {
+        message:"dublicate mention"
+      }).optional()
+    }).superRefine((data,ctx)=>{
+      if(!Object.values(data).length){
+        ctx.addIssue({
+          code:"custom",
+          message:"at least one field is required"
+        })
+      }
     })
   }
 
@@ -27,51 +64,9 @@ export const LikeAndULikeSchema = {
       postId:z.string().nonempty("postId is required").regex(/^[0-9a-fA-F]{24}$/, "Invalid ObjectId")
     })
   }
-  export const createCommentSchema = {
-  body:z.object({
-        text: z.string()
-      .nonempty("Comment text is required")
-  }),
-    params:z.object({
-      postId:z.string().nonempty("postId is required").regex(/^[0-9a-fA-F]{24}$/, "Invalid ObjectId")
-    })
-  }
-  export const ReplayCommentSchema = {
-  body:z.object({
-        text: z.string()
-      .nonempty("Comment text is required")
-  }),
-    params:z.object({
-      postId:z.string().nonempty("postId is required").regex(/^[0-9a-fA-F]{24}$/, "Invalid ObjectId"),
-      commentId:z.string().nonempty("commentId is required").regex(/^[0-9a-fA-F]{24}$/, "Invalid ObjectId"),
-    })
-  }
-    export const deleteCommentSchema = {
-    params:z.object({
-      postId:z.string().nonempty("postId is required").regex(/^[0-9a-fA-F]{24}$/, "Invalid ObjectId"),
-      commentId:z.string().nonempty("commentId is required").regex(/^[0-9a-fA-F]{24}$/, "Invalid ObjectId"),
-    })
-  }
-    export const deleteReplayCommentSchema = {
-    params:z.object({
-      postId:z.string().nonempty("postId is required").regex(/^[0-9a-fA-F]{24}$/, "Invalid ObjectId"),
-      commentId:z.string().nonempty("commentId is required").regex(/^[0-9a-fA-F]{24}$/, "Invalid ObjectId"),
-      replayId:z.string().nonempty("commentId is required").regex(/^[0-9a-fA-F]{24}$/, "Invalid ObjectId"),
-    })
-  }
-    export const getCommentSchema = {
-    params:z.object({
-      postId:z.string().nonempty("postId is required").regex(/^[0-9a-fA-F]{24}$/, "Invalid ObjectId")
-    })
-  }
+
 
   
 export type LikeAndULikeSchemabodyType = z.infer<typeof LikeAndULikeSchema.body>;
 export type LikeAndULikeSchemaparamsType = z.infer<typeof LikeAndULikeSchema.params>;
 export type CreatePostSchemaType = z.infer<typeof CreatePostSchema.body>;
-export type createCommentSchemaType = z.infer<typeof createCommentSchema.body>;
-export type CommentParamsSchemaType = z.infer<typeof createCommentSchema.params>;
-export type ReplayCommentParamsSchemaType = z.infer<typeof ReplayCommentSchema.params>;
-export type ReplayCommentbodySchemaType = z.infer<typeof ReplayCommentSchema.body>;
-export type deleteCommentSchemaType = z.infer<typeof deleteCommentSchema.params>;
-export type deleteReplayCommentSchemaType = z.infer<typeof deleteReplayCommentSchema.params>;

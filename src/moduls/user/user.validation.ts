@@ -1,5 +1,6 @@
 import * as z from "zod";
 import { GenderType, RoleType } from "../../DB/models/user.model";
+import { GenralRoles } from "../../utils/genralRoles";
 
 
 export const enum FlagType{
@@ -24,8 +25,8 @@ const baseUserInfo = {
 
 export const SignInSchema = {
    body: z.object({
-    email: z.string().email({ message: "Invalid email address" }),
-    password: z.string().min(6, { message: "Password must be at least 6 characters long" })
+    email: GenralRoles.email,
+    password: GenralRoles.password
   })
 }
 
@@ -48,7 +49,7 @@ export const Enable_STSchema = {
 }
 export const UpdateEmailSchema = {
   body:z.object({
-        email: z.string().email({ message: "Invalid email address" }),
+        email: GenralRoles.email,
   })
 }
 export const forgetpasswordSchema = {
@@ -71,16 +72,16 @@ export const UpdatePasswordSchema={
 }
 export const ResetPasswordSchema={
   body: UpdatePasswordSchema.body.safeExtend({
-    email: z.string().email({ message: "Invalid email address" }),
-     otp:z.string().length(6, { message: "OTP must be 6 digits" })
+    email: GenralRoles.email,
+     otp:GenralRoles.otp
   })
   
 }
 
 export const ConfirmEmailSchema = {
   body: z.object({
-    email: z.string().email({ message: "Invalid email address" }),
-    otp:z.string().length(6, { message: "OTP must be 6 digits" })
+    email: GenralRoles.email,
+    otp:GenralRoles.otp
   })
 }
 

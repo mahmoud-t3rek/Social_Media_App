@@ -3,18 +3,22 @@ import { Validation } from '../../middleware/validation';
 import * as PV from './post.validation';
 import PS from './post.service';
 import { Authountcation } from '../../middleware/authountcation';
-
+import { fileValidation, MulterCloud } from '../../middleware/Multer';
+import CommentRouter from '../Comment/Comment.controller';
 const PostRouter=Router()
 
+PostRouter.use("/:postId/comments{/:commentId/reply}",CommentRouter)
 
 
-PostRouter.post("/CreatePost",Authountcation(),Validation(PV.CreatePostSchema),PS.createPost)
+
+PostRouter.post("/CreatePost",Authountcation(),
+MulterCloud({fileTypes:fileValidation.image}).array("attachments"),Validation(PV.CreatePostSchema),
+PS.createPost)
+PostRouter.patch("/update/:postId",Authountcation(),MulterCloud({fileTypes:fileValidation.image}).array("attachments"),Validation(PV.updatePostSchema),PS.updatepost)
 PostRouter.patch("/likeAndUnLike/:postId",Authountcation(),Validation(PV.LikeAndULikeSchema),PS.likeAndUnLike)
-PostRouter.patch("/:postId/Comment",Authountcation(),Validation(PV.createCommentSchema),PS.createComment)
-PostRouter.get("/:postId/Comments",Authountcation(),Validation(PV.getCommentSchema),PS.getcomments)
-PostRouter.patch("/:postId/comments/:commentId",Authountcation(),Validation(PV.ReplayCommentSchema),PS.ReplayToComment)
-PostRouter.delete("/:postId/comments/:commentId",Authountcation(),Validation(PV.deleteCommentSchema),PS.DeleteComment)
-PostRouter.delete("/:postId/comments/:commentId/replays/:replayId",Authountcation(),Validation(PV.deleteReplayCommentSchema),PS.DeleteReplayComment)
-
+PostRouter.get("/",PS.getPosts)
+PostRouter.patch("/:postId/freeze",Authountcation(),PS.freezePost)
+PostRouter.patch("/:postId/unfreeze",Authountcation(),PS.unfreezePost)
+PostRouter.delete("/:postId",Authountcation(),PS.hardDelete)
 
 export default PostRouter

@@ -1,60 +1,81 @@
 import mongoose, { Types } from 'mongoose';
+import { _discriminatedUnion } from 'zod/v4/core';
+import CommentModel from './comments.model';
 
-export interface IReplay {
-  _id?: Types.ObjectId
-  userId: Types.ObjectId
-  text: string
-  createdAt?: Date
+export enum AllowComment{
+  any="any",
+  all="all"
 }
-export interface IComment {
-  _id?: Types.ObjectId
-  userId: Types.ObjectId
-  text: string
-  createdAt?: Date
-  replays?: IReplay[]
+
+export enum Availability {
+  public = "public",
+  private = "private",
+  friends = "friends"
 }
+
 
 export interface IPost {
   _id?: Types.ObjectId
-  userId: Types.ObjectId | string
+  createdBy: Types.ObjectId | string
   post: string
   likes: Types.ObjectId[]
   content: string
-  comments: IComment[]
+  assetFolderId?:string
+  allowComment?: AllowComment
+  availability?: Availability
+  attachments?:string[]
+  tags?: Types.ObjectId[]
   createdAt?: Date
   updatedAt?: Date
+  isDeleted?:boolean
+  deletedBy?: Types.ObjectId | undefined;
+  restoredAt?: Date;
+  restoredBy?: Types.ObjectId;
 }
-const ReplaySchema = new mongoose.Schema<IReplay>({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-  text: { type: String, required: true },
-  createdAt: { type: Date, default: Date.now },
-})
 
-const CommentSchema = new mongoose.Schema<IComment>({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-  text: { type: String, required: true },
-  createdAt: { type: Date, default: Date.now },
-  replays: [ReplaySchema],
-})
 
 const PostSchema = new mongoose.Schema<IPost>(
   {
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-    post: { type: String, required: true },
+    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     likes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     content: { type: String, required: true },
-    comments: [CommentSchema],
+    attachments:[String],
+    assetFolderId:{type:String},
+    allowComment: { type: String, enum: AllowComment, default: AllowComment.all },
+    availability: { type: String, enum: Availability, default: Availability.public },
+    tags: [{ type: mongoose.Schema.Types.ObjectId, ref: "user" }],
+    isDeleted: {type:Boolean},
+    deletedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    restoredAt: Date,
+    restoredBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   },
   {
     timestamps: true,
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
+    strictQuery:true
   }
 )
+PostSchema.pre(["findOne","find"],function(next){
+  const query=this.getQuery()
+  const{paranoid,...rest}=query
+  if(paranoid===false){
+    this.setQuery({...rest})
+  }else{
+    this.setQuery({...rest,deletedAt:{$exists:false}})
+  }
+  next()
+})
 
 PostSchema.virtual('likesCount').get(function() {
-  return this.likes.length
+ return Array.isArray(this.likes) ? this.likes.length : 0;
 })
+
+PostSchema.virtual("comments",({
+  ref:"Comment",
+  localField:"_id",
+  foreignField:"postId"
+}))
 
 const PostModel=mongoose.models.Post || mongoose.model("Post",PostSchema)
 

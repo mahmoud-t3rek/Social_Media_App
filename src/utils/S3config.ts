@@ -94,7 +94,7 @@ Bucket?:string
 ACL?:ObjectCannedACL,
 storetype?:storageType,
 files:Express.Multer.File[]
-LargeFile:Boolean
+LargeFile?:Boolean
 })=>{
 let urls:string[]=[]
 if(LargeFile==true){
