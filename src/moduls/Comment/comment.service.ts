@@ -97,6 +97,112 @@ if(!comment){
 
   return res.status(201).json({message:" comment create successfully"})
 }
+freezeComment=async (req: Request, res: Response, next: NextFunction) => {
+const {postId,commentId}:CV.DeleteCommentSchemaType=req.params as CV.DeleteCommentSchemaType
+const {onModel}:CV.DeleteCommentSchemabodyType=req.body
+const user=req.user
+const post=await this._Postmodel.findOne({_id:postId,isDeleted:{$ne:true}})
+if(!post){
+  throw new AppError("post not found",404);
+}
+const comment=await this._Commentmodel.findOne({_id:commentId,isDeleted:{$ne:true}})
+if(!comment){
+  throw new AppError("comment not found",404);
+}
+if(onModel !== comment.onModel){
+ throw new AppError("Invalid onModel type for this comment", 400)
+}
+
+if(user?.role!==RoleType.admin
+  && user!._id.toString()!==post.createdBy.toString() 
+  && user!._id.toString()!==comment.createdBy.toString())
+{
+ throw new AppError("Not authorized to freeze this comment",404);
+}
+if(onModel==onModelEnum.post && comment.refId!.toString()!==postId.toString())
+{
+throw new AppError("Comment does not belong to this post", 400);
+} 
+comment.isDeleted=true
+comment.deletedBy=user?._id as unknown as Types.ObjectId
+await comment.save()
+
+  return res.status(200).json({message:" comment frozen successfully"})
+}
+unfreezeComment=async (req: Request, res: Response, next: NextFunction) => {
+const {postId,commentId}:CV.DeleteCommentSchemaType=req.params as CV.DeleteCommentSchemaType
+const {onModel}:CV.DeleteCommentSchemabodyType=req.body
+const user=req.user
+const post=await this._Postmodel.findOne({_id:postId,isDeleted:{$ne:true}})
+if(!post){
+  throw new AppError("post not found",404);
+}
+const comment=await this._Commentmodel.findOne({_id:commentId,isDeleted:true})
+if(!comment){
+throw new AppError("Comment not found or already active", 404);
+}
+if(onModel !== comment.onModel){
+ throw new AppError("Invalid onModel type for this comment", 400)
+}
+
+if(user?.role!==RoleType.admin && 
+  user!._id.toString()!==post.createdBy.toString()
+&& user!._id.toString() !== comment.createdBy.toString()
+)
+{
+ throw new AppError("Not authorized to unfreeze this comment",404);
+}
+if(onModel==onModelEnum.post && comment.refId!.toString()!==postId.toString())
+{
+throw new AppError("Comment does not belong to this post", 400);
+} 
+comment.isDeleted=false
+comment.deletedBy=undefined
+await comment.save()
+
+  return res.status(200).json({message:" comment unfrozen successfully"})
+}
+hardDeleteComment=async (req: Request, res: Response, next: NextFunction) => {
+const {postId,commentId}:CV.hardDeleteSchemaType=req.params as CV.hardDeleteSchemaType
+const user=req.user
+const post=await this._Postmodel.findOne({_id:postId})
+if(!post){
+  throw new AppError("post not found",404);
+}
+const comment=await this._Commentmodel.findOne({_id:commentId})
+if(!comment){
+throw new AppError("Comment not found", 404);
+}
+
+
+
+if(user?.role!==RoleType.admin && 
+  user!._id.toString()!==post.createdBy.toString()
+&& user!._id.toString() !== comment.createdBy.toString()
+)
+{
+ throw new AppError("Not authorized to delete this comment",403);
+}
+ if (comment.onModel === onModelEnum.post && comment.refId!.toString() !== postId.toString()) {
+    throw new AppError("Comment does not belong to this post", 404);
+  }
+  await deleteFiles({ urls: comment.attachments ?? [] });
+
+  const deletedComment = await this._Commentmodel.findOneAndDelete({ _id: commentId });
+  if (!deletedComment){
+     throw new AppError("Failed to delete comment", 400)
+    }
+if(comment.onModel===onModelEnum.post){
+const replies = await this._Commentmodel.find({filter:{ refId: commentId }});
+
+await Promise.all(replies.map(r => deleteFiles({ urls: r.attachments ?? [] })));
+
+await this._Commentmodel.deleteMany({ refId: commentId });
+
+}
+
+  return res.status(200).json({message:" comment deleted successfully"})
+}
 
 
 

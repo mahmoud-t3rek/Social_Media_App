@@ -29,6 +29,20 @@ export const SignInSchema = {
     password: GenralRoles.password
   })
 }
+export const sendRequestSchema = {
+   params: z.object({
+    id:z.string()
+        .nonempty("sendTo is required")
+        .regex(/^[0-9a-fA-F]{24}$/, "Invalid ObjectId"),
+  })
+}
+export const acceptRequestSchema = {
+   params: z.object({
+    requestid:z.string()
+        .nonempty("sendTo is required")
+        .regex(/^[0-9a-fA-F]{24}$/, "Invalid ObjectId"),
+  })
+}
 
 export const SignUpSchema = {
   body: SignInSchema.body.safeExtend({
@@ -105,3 +119,5 @@ export type Enable_STSchemaSchemaType = z.infer<typeof Enable_STSchema.body>;
 export type LoginWithEmailSchemaType = z.infer<typeof LoginWithEmailSchema.body>;
 export type forgetpasswordSchemaType = z.infer<typeof forgetpasswordSchema.body>;
 export type ResetPasswordSchemaType = z.infer<typeof ResetPasswordSchema.body>;
+export type sendRequestSchemaType = z.infer<typeof sendRequestSchema.params>;
+export type acceptRequestSchemaType = z.infer<typeof acceptRequestSchema.params>;

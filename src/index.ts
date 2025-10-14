@@ -4,9 +4,17 @@ config({path:resolve("./config/.env")})
 
 import express from  'express'
 import bootstrap from './app.controller';
+import { Server } from 'socket.io';
+import { Socket } from 'socket.io';
+import { AppError } from './utils/ClassError';
+import { Decoded_Token, GetSignutre, TokenType } from './services/Token/Token';
+import { HydratedDocument } from 'mongoose';
+import { Iuser } from './DB/models/user.model';
+import { JwtPayload } from 'jsonwebtoken';
+
 const app = express()
-const port:string |Number = process.env.PORT || 5000
+
 bootstrap(app)
 
-app.listen(port, () => console.log(`Example app listening on port ${port}!`))
-     
+
+    

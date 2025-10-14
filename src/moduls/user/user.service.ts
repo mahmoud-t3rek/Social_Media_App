@@ -15,12 +15,23 @@ import { GenerateTokens } from "../../services/Token/GenreteToken";
 import PostModel from "../../DB/models/post.model";
 import { PostReposotry } from "../../DB/repository/Post.repository";
 import { OAuth2Client, TokenPayload } from "google-auth-library";
-import { createUrlRequestPresigner, uploadFile, UploadFiles, UploadLargeFile } from "../../utils/S3config";
+import { createUrlRequestPresigner, Get_File, uploadFile, UploadFiles, UploadLargeFile } from "../../utils/S3config";
+import { frinedRequastReposotry } from "../../DB/repository/frinedRequast.repository ";
+import frinedRequastModel from "../../DB/models/frinedrequaste.model";
+import { Types } from "mongoose";
+import { chatReposotry } from "../../DB/repository/chat.repository";
+import ChatModel from "../../DB/models/chat.model";
+
+
 
 class UserService{
     private _userModel=new UserReposotry(userModel)
     private _RovekeToken=new RevokeTokenReposotry(RevokeTokenModel)
     private _Postmodel=new PostReposotry(PostModel)
+    private _frineRequestModel=new frinedRequastReposotry(frinedRequastModel)
+    private _chatModel=new  chatReposotry(ChatModel)
+    
+
   
     constructor(){}
 //=========================SignUp==================================
@@ -89,8 +100,24 @@ res.status(200).json({ message: "success LogIn", ...tokens });
 }
 
 getProfile=async(req: Request, res: Response, next: NextFunction)=>{
+const userDoc = await this._userModel.findOne({ _id: req.user?._id },undefined,{
+  populate:[{
+    path:"friends"
+  }]
+})
+const groups=await this._chatModel.find({
+  filter:{participantses:{$in:[req?.user?._id]},
+ group: { $exists: true}
+}})
 
-   res.status(200).json({message:"success LogIn",user:req?.user})
+
+
+
+
+
+res.status(200).json({ message: "success LogIn",data:{user:userDoc,groups}});
+
+
 
 }
     
@@ -318,6 +345,7 @@ const key=await createUrlRequestPresigner({
 ContentType,originalname
 
 })
+
 const finduser=await this._userModel.findOneAndUpdate({_id:req.user?._id},
   {
     $set:{
@@ -364,7 +392,109 @@ throw new AppError("Not authorized to freeze this profile",403);
   }
   res.status(200).json({ message: "Account has been frozen successfully" })
 }
-
-
+dashBoard=async(req: Request, res: Response, next: NextFunction)=>{
+const results=await Promise.allSettled([
+  this._userModel.find({filter:{}}),
+  this._Postmodel.find({filter:{}})
+])
+  res.status(200).json({ message: " success" ,results})
 }
-export default new UserService()
+changeRole=async(req: Request, res: Response, next: NextFunction)=>{
+  const{id}=req.params 
+  const user=req.user 
+  const {role:newRole}=req.body 
+const denyRoles:RoleType[]=[newRole,RoleType.superAdmin]
+if(user?.role===RoleType.admin){
+  denyRoles.push(RoleType.admin)
+  if(newRole==RoleType.superAdmin){
+    throw new AppError("un authouraized",401);
+  }
+}
+
+const finduser=await this._userModel.findOneAndUpdate({
+  _id:id,
+  role:{$nin:denyRoles}
+},{
+  role:newRole
+},{
+  new:true
+})
+if(!finduser){
+  throw new AppError("user not found",404);
+}
+  res.status(200).json({ message: " success" 
+
+  })
+}
+sendRequest=async(req: Request, res: Response, next: NextFunction)=>{
+const {id}=req.params
+const user=req.user
+const finduser=await this._userModel.findOne({_id:id})
+if(!finduser){
+  throw new AppError("user not found",404)
+}
+if(user?._id===id){
+  throw new AppError("can't send request to your self ",404)
+}
+
+const checkfriend=await this._frineRequestModel.findOne({
+  sendTo:{$in:[id , user?._id]},
+  createdBy:{$in:[id , user?._id]},
+})
+if(checkfriend){
+  throw new AppError("request already sent",404)
+}
+const request=await this._frineRequestModel.create({
+  createdBy:user?._id as unknown as Types.ObjectId,
+  sendTo:id as unknown as Types.ObjectId,
+})
+  res.status(200).json({ message: " success" })
+}
+acceptRequest=async(req: Request, res: Response, next: NextFunction)=>{
+const{requestid}=req.params
+const user=req.user
+
+
+
+const checkRequast=await this._frineRequestModel.findOneAndUpdate({
+  _id:requestid,
+  sendTo:user?._id,
+accepted: { $exists: false }
+},{
+accepted:true
+
+})
+if(!checkRequast){
+  throw new AppError("not request found",404); 
+}
+
+const [res1, res2] = await Promise.all([
+  this._userModel.updateOne(
+    { _id: checkRequast.sendTo, friends: { $nin: [checkRequast.createdBy] } },
+    { $push: { friends: checkRequast.createdBy } }
+  ),
+  this._userModel.updateOne(
+    { _id: checkRequast.createdBy, friends: { $nin: [checkRequast.sendTo] } },
+    { $push: { friends: checkRequast.sendTo } }
+  )
+]);
+
+if (res1?.modifiedCount === 0 && res2?.modifiedCount === 0) {
+  throw new AppError("users are already friends", 400);
+}
+
+
+  res.status(200).json({ message: " success" })
+}
+uploadpicture=async (req: Request, res: Response, next: NextFunction)=>{
+    const {path}=req.params as unknown as {path:string[]}
+    const Key=path.join("/")
+    const result=await Get_File({Key})
+    const stream=result.Body as NodeJS.ReadableStream
+res.set("Cross-Origin-Resource-Policy", "cross-origin");
+res.setHeader("Content-Type", result.ContentType || "application/octet-stream");
+stream.pipe(res)
+     
+  }
+}
+export default new UserService() 

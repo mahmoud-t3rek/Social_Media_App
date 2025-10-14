@@ -5,9 +5,13 @@ import * as UV from './user.validation';
 import { Authountcation } from '../../middleware/authountcation';
 import { TokenType } from '../../services/Token/Token';
 import { fileValidation, MulterCloud } from '../../middleware/Multer';
+import { Authorization } from '../../middleware/authoraization';
+import { RoleType } from '../../DB/models/user.model';
+import chatRouter from '../Chat/chat.controller';
 
 const UserRouter=Router()
 
+UserRouter.use("/:userId/chat",chatRouter)
 
 UserRouter.post("/signup",Validation(UV.SignUpSchema),US.signUp)
 UserRouter.patch("/confirmEmail",Validation(UV.ConfirmEmailSchema),US.confirmEmail)
@@ -24,8 +28,13 @@ UserRouter.patch("/updateEmail",Authountcation(),Validation(UV.UpdateEmailSchema
 UserRouter.post("/forgetpassword",Validation(UV.forgetpasswordSchema),US.forgetPassword)
 UserRouter.patch("/resetpassword",Validation(UV.ResetPasswordSchema),US.resetPassword)
 UserRouter.post("/uploadimage",Authountcation(),MulterCloud({fileTypes:fileValidation.image}).array("files"),US.uploadProfileImage)
+UserRouter.get("/upload/*path",US.uploadpicture)
 UserRouter.post("/frezzeaccount/:id",Authountcation(),US.freezeAccount)
 UserRouter.post("/unfrezzeaccount/:id",Authountcation(),US.UnfreezeAccount)
+UserRouter.get("/dashboard",Authountcation(),Authorization([RoleType.admin,RoleType.superAdmin]),US.dashBoard)
+UserRouter.patch("/changerole/:id",Authountcation(),Authorization([RoleType.admin,RoleType.superAdmin]),US.changeRole)
+UserRouter.post("/sendrequest/:id",Authountcation(),Validation(UV.sendRequestSchema),US.sendRequest)
+UserRouter.patch("/acceptrequest/:requestid",Authountcation(),Validation(UV.acceptRequestSchema),US.acceptRequest)
 
 
 

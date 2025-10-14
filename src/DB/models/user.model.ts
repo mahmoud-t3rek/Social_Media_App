@@ -7,7 +7,8 @@ export enum GenderType{
 }
 export enum RoleType {
   user="user",
-  admin = "admin"
+  admin = "admin",
+  superAdmin = "superAdmin"
 }
 export enum ProviderType {
   Google="Google",
@@ -59,7 +60,7 @@ const userSchema=new mongoose.Schema<Iuser>({
   otpExp:{type:Date},
   confirmed:{type:Boolean},
   changeCardnality:{type:Date},
-  friends: [{ type: mongoose.Schema.Types.ObjectId, ref: "user" }],
+  friends: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   age:{type:Number,required:function(){
     return this.provider===ProviderType.Google ? false : true }},
   address:{type:String},

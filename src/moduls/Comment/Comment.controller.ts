@@ -10,17 +10,15 @@ const CommentRouter=Router({mergeParams:true})
 CommentRouter.post("/",Authountcation(),
 MulterCloud({fileTypes:fileValidation.image}).array("attachments"),Validation(CV.createCommentSchema),UC.createComment
 )
-CommentRouter.delete("/",Authountcation(),
-MulterCloud({fileTypes:fileValidation.image}).array("attachments"),Validation(CV.createCommentSchema),UC.createComment
+CommentRouter.patch("/:commentId/freeze",Authountcation(),
+Validation(CV.DeleteCommentSchema),UC.freezeComment
 )
-// CommentRouter.post("/:commentId",Authountcation(),
-// MulterCloud({fileTypes:fileValidation.image}).array("attachments"),Validation(CV.createReplaySchema),UC.createReplay
-// )
-// CommentRouter.patch("/:postId/Comment",Authountcation(),PS.createComment)
-// CommentRouter.get("/:postId/Comments",Authountcation(),Validation(.getCommentSchema),PS.getcomments)
-// CommentRouter.patch("/:postId/comments/:commentId",Authountcation(),Validation(.ReplayCommentSchema),PS.ReplayToComment)
-// CommentRouter.delete("/:postId/comments/:commentId",Authountcation(),Validation(.deleteCommentSchema),PS.DeleteComment)
-// CommentRouter.delete("/:postId/comments/:commentId/replays/:replayId",Authountcation(),Validation(.deleteReplayCommentSchema),PS.DeleteReplayComment)
+CommentRouter.patch("/:commentId/unfreeze",Authountcation(),
+Validation(CV.DeleteCommentSchema),UC.unfreezeComment
+)
+CommentRouter.delete("/:commentId",Authountcation(),
+Validation(CV.hardDeleteSchema),UC.hardDeleteComment
+)
 
 
 export default CommentRouter

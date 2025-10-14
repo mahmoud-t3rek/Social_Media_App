@@ -193,7 +193,7 @@ urls:string[]
 Bucket?:string
 Quiet?:boolean
 })=>{
-
+ if (!urls || urls.length === 0) return;
  const command =new DeleteObjectsCommand({
       Bucket,
         Delete:{

@@ -11,9 +11,10 @@ export class DBRepository<TDocument>{
     async create(data:Partial<TDocument>):Promise<HydratedDocument<TDocument>>{
         return this.model.create(data)
     }
-    async findOne(filter:RootFilterQuery<TDocument>,select?:ProjectionType<TDocument>, options?: QueryOptions<TDocument>): Promise<HydratedDocument<TDocument> | null> {
-        return await this.model.findOne(filter,select,options);
-      }   
+ async findOne(filter: RootFilterQuery<TDocument>,select?: ProjectionType<TDocument>,options?: QueryOptions<TDocument>):Promise<HydratedDocument<TDocument> | null> {
+ return await this.model.findOne(filter, select, options);
+}
+ 
     async find({
           filter,
           select,

@@ -41,11 +41,31 @@ export const createCommentSchema = {
     })
   
   }
+export const DeleteCommentSchema = {
+body: z.object({
+  onModel: z.enum([onModelEnum.post, onModelEnum.comment])
+}).refine((data) => data.onModel, {
+  message: "onModel is required and must be Post or Comment",
+path:["onModel"]
+}),
+  params:z.object({
+   postId:z.string().nonempty("postId is required").regex(/^[0-9a-fA-F]{24}$/, "Invalid ObjectId"),
+   commentId:z.string().nonempty("postId is required").regex(/^[0-9a-fA-F]{24}$/, "Invalid ObjectId")
+    })
+  
+  }
+  export const hardDeleteSchema={
+     params:z.object({
+   postId:z.string().nonempty("postId is required").regex(/^[0-9a-fA-F]{24}$/, "Invalid ObjectId"),
+   commentId:z.string().nonempty("postId is required").regex(/^[0-9a-fA-F]{24}$/, "Invalid ObjectId")
+    })
+  }
 
 
 
 
 export type createCommentSchemaType = z.infer<typeof createCommentSchema.body>;
 export type CommentParamsSchemaType = z.infer<typeof createCommentSchema.params>;
-// export type deleteCommentSchemaType = z.infer<typeof deleteCommentSchema.params>;
-// export type deleteReplayCommentSchemaType = z.infer<typeof deleteReplayCommentSchema.params>;
+export type DeleteCommentSchemabodyType = z.infer<typeof DeleteCommentSchema.body>;
+export type DeleteCommentSchemaType = z.infer<typeof DeleteCommentSchema.params>;
+export type hardDeleteSchemaType = z.infer<typeof hardDeleteSchema.params>;

@@ -11,12 +11,12 @@ export interface IComment {
   assetFolderId?:string
   attachments?:string[]
   tags?: Types.ObjectId[]
-  refId?: Types.ObjectId
+  refId?: Types.ObjectId | undefined
   onModel:onModelEnum
   likes: Types.ObjectId[]
   updatedAt?: Date
-   isDeleted?: boolean;
-  deletedBy?: Types.ObjectId;
+  isDeleted?: boolean;
+  deletedBy?: Types.ObjectId | undefined
   restoredAt?: Date;
   restoredBy?: Types.ObjectId;
 }
