@@ -21,6 +21,9 @@ import frinedRequastModel from "../../DB/models/frinedrequaste.model";
 import { Types } from "mongoose";
 import { chatReposotry } from "../../DB/repository/chat.repository";
 import ChatModel from "../../DB/models/chat.model";
+import { users } from "./graphQl/user.feilds";
+import { graphql, GraphQLError } from "graphql";
+import { AuthountcationQQL } from "../../middleware/authountcation";
 
 
 
@@ -496,5 +499,49 @@ res.setHeader("Content-Type", result.ContentType || "application/octet-stream");
 stream.pipe(res)
      
   }
+ //==========================GraphQl======================================
+ getAllUsers=async()=>{
+   const user=await this._userModel.find({filter:{}})
+   return user
+ } 
+ getOneUser=async(parent:any,args:any,context:any)=>{
+
+  
+       const {user}=  await AuthountcationQQL(context.req.headers.authorization)
+
+        const finduser=await this._userModel.findOne({_id:user?._id})
+          if(!finduser){
+             throw new GraphQLError("user not found",{extensions:{
+            message:"user not exist",
+            statusCode:404
+          }});
+          }
+            return user
+  }
+createUser=async(parent: any, args: any) => {
+        const { fName,lName, email, password, gender,role,age } = args;
+        const finduser=await this._userModel.findOne({email})
+        if(finduser){
+          throw new GraphQLError("email already exist",{extensions:{
+            message:"email alreday exist",
+            statusCode:400
+          }});
+        }
+      const hashPassword=await Hash(password)
+      const otp= await CreateOTP()
+      const hashotp=await Hash(String(otp))
+      const user=await this._userModel.create({
+        fName,
+        lName,
+        email,
+        password:hashPassword,
+        gender,
+        role,
+        age
+      })
+      eventEmitter.emit("confirm email",{email,otp})
+
+        return user;
+        }
 }
 export default new UserService() 

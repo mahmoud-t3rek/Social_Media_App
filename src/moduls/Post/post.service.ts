@@ -12,6 +12,10 @@ import { deleteFiles, UploadFiles } from "../../utils/S3config"
 import PostModel, { Availability } from "../../DB/models/post.model"
 import { CommentReposotry } from "../../DB/repository/comment.repository "
 import CommentModel from "../../DB/models/comments.model"
+import { GraphQLError } from "graphql"
+import { Authountcation, AuthountcationQQL } from "../../middleware/authountcation"
+import { connectionSockets } from "../../middleware/authoraization.socketIo"
+import { getIo } from "../gateway/gateway"
 
 
 
@@ -197,7 +201,77 @@ const deletePost=await this._Postmodel.findOneAndDelete({_id:postId})
 res.status(200).json({message:"post deleted successfully"});
 }
 
+getOnePost=async(parent:any,args:any,context:any)=>{
+const {postId}=args
+const findPost=await this._Postmodel.findOne({_id:postId})
+if(!findPost){
+    throw new GraphQLError("post not found",{extensions:{
+              message:"post not found",
+              statusCode:404
+      }});
 }
+return findPost
+}
+createGqlPost=async(parent:any,args:any,context:any)=>{
+  const {content,allowComment,availability,tags}=args
+  const {user}=  await AuthountcationQQL(context.req.headers.authorization)
+  const finduser=await this._userModel.findOne({_id:user?._id})
+     if(!finduser){
+         throw new GraphQLError("user not found",{extensions:{
+            message:"user not exist",
+            statusCode:404
+      }});
+  }
+
+  const createPost=await this._Postmodel.create({
+    createdBy:user._id,
+    content,
+    allowComment,
+    availability,
+    tags
+  })
+ return createPost
+
+}
+createGqlLikePost=async(parent:any,args:any,context:any)=>{
+  const {postId,action}=args
+  const {user}=  await AuthountcationQQL(context.req.headers.authorization)
+
+ let updateQuery = {};
+    if (action === PV.likeType.unlike) {
+      updateQuery = { $pull: { likes: user?._id } };
+    } else if (action === PV.likeType.like) {
+      updateQuery = { $addToSet: { likes: user?._id } };
+    }
+  const updatedPost = await this._Postmodel.findOneAndUpdate({_id:postId,
+     isDeleted: { $ne: true },
+    $or:[
+      { availability:Availability.public},
+      { availability:Availability.private,createdBy:user?._id},
+      { availability:Availability.friends,createdBy:{$in:[...user?.friends! || [],user?._id]}},
+    ]},
+    updateQuery, { new: true });
+    if (!updatedPost) {
+       throw new GraphQLError("post not found",{extensions:{
+            message:"post  not found",
+            statusCode:404
+        }
+      })
+     
+    }
+ const socketId = connectionSockets?.get(updatedPost.createdBy.toString());
+if (socketId) {
+  getIo().to(socketId).emit("successMessage", { postId, action });
+}
+return updatedPost
+
+}
+
+
+
+
+}
+
 
 
 

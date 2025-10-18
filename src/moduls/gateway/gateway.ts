@@ -2,6 +2,7 @@ import { Server, Socket } from "socket.io";
 import { Server as HttpServer } from "http";
 import { authorizationSocketIo, connectionSockets } from "../../middleware/authoraization.socketIo";
 import { chatEvents } from "../Chat/chatEvents";
+import { AppError } from "../../utils/ClassError";
 const ChatEvents=new chatEvents
 let io:Server | undefined =undefined
 export const intializationIo = (HttpServer: HttpServer) => {
@@ -55,3 +56,11 @@ socket.on("disconnect", () => {
 });
 
 };
+
+export const getIo=():Server =>{
+  if(!io){
+    throw new AppError("io no intilaized",400);
+    
+  }
+  return io
+}

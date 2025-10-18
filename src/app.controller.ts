@@ -12,6 +12,9 @@ import { pipeline } from "nodemailer/lib/xoauth2";
 import {promisify} from "node:util"
 import { intializationIo } from "./moduls/gateway/gateway";
 import chatRouter from "./moduls/Chat/chat.controller";
+import { createHandler } from 'graphql-http/lib/use/express';
+import { schemaQql } from "./moduls/GraphQl/schema.ggl";
+
 
 const writepipelline=promisify(pipeline)
 
@@ -28,7 +31,8 @@ export const bootstrap = (app: Application) => {
   app.get("/", (req: Request, res: Response, next: NextFunction) =>
     res.status(200).json({ message: "Welcome to my app.................✌️💙" })
   );
-  
+
+  app.all('/graphql', createHandler({ schema:schemaQql ,context:(req)=>({req})}));
 
 
   app.use("{/demo}", (req: Request, res: Response, next: NextFunction) => {

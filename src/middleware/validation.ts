@@ -1,6 +1,7 @@
 import { NextFunction ,Request,Response} from "express"
 import { ZodType } from "zod"
 import { AppError } from "../utils/ClassError"
+import { GraphQLError } from "graphql"
 
 type ReqType=keyof Request
 type SchemaType=Partial<Record<ReqType,ZodType>>
@@ -33,4 +34,22 @@ return (req:Request,res:Response,next:NextFunction)=>{
  }
  next()
 }
+}
+export const ValidationGQl=(Schema:ZodType,args:any)=>{
+
+
+    let ValdiationError:any[]= []
+
+
+    const result=Schema.safeParse(args)
+    if(!result?.success && result.error){
+  ValdiationError.push(result.error)
+ }
+ if(ValdiationError.length){
+     throw new GraphQLError("validation error ",{extensions:{
+        message:"validation error",
+        statusCode:400
+      }});
+ }
+
 }
