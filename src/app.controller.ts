@@ -7,41 +7,57 @@ import { AppError } from "./utils/ClassError";
 import ConnectionDB from "./DB/connectionDB";
 import UserRouter from "./moduls/user/user.controller";
 import PostRouter from "./moduls/Post/Post.controller";
-import { Get_File, getUrlRequestPresigner } from "./utils/S3config";
-import { pipeline } from "nodemailer/lib/xoauth2";
-import {promisify} from "node:util"
-import { intializationIo } from "./moduls/gateway/gateway";
 import chatRouter from "./moduls/Chat/chat.controller";
-import { createHandler } from 'graphql-http/lib/use/express';
+import { intializationIo } from "./moduls/gateway/gateway";
+import { createHandler } from "graphql-http/lib/use/express";
 import { schemaQql } from "./moduls/GraphQl/schema.ggl";
 
+export const bootstrap = async (app: Application) => {
 
-const writepipelline=promisify(pipeline)
-
-export const bootstrap = (app: Application) => {
-  
   app.use(express.json());
-  ConnectionDB()
   app.use(cors());
   app.use(helmet());
   app.use(Limiter());
-  app.use("/users",UserRouter)
-  app.use("/post",PostRouter)
-  app.use("/chat",chatRouter)
-  app.get("/", (req: Request, res: Response, next: NextFunction) =>
-    res.status(200).json({ message: "Welcome to my app.................✌️💙" })
+
+
+  await ConnectionDB();
+
+
+  app.use("/users", UserRouter);
+  app.use("/post", PostRouter);
+  app.use("/chat", chatRouter);
+
+
+  app.get("/", (req: Request, res: Response) => {
+    res.status(200).json({
+      status: "success",
+      message: "Server is running 🚀",
+    });
+  });
+
+  app.all(
+    "/graphql",
+    createHandler({
+      schema: schemaQql,
+      context: (req) => ({ req }),
+    })
   );
 
-  app.all('/graphql', createHandler({ schema:schemaQql ,context:(req)=>({req})}));
-
-
-  app.use("{/demo}", (req: Request, res: Response, next: NextFunction) => {
-    throw new AppError(`Invalid url ${req.originalUrl}`,404); 
+  app.all("*", (req: Request, res: Response, next: NextFunction) => {
+    next(new AppError(`Invalid URL ${req.originalUrl}`, 404));
   });
-  const port:string |Number = process.env.PORT || 5000
-  const server=app.listen(port, () => console.log(`Example app listening on port ${port}!`))
-  intializationIo(server)
-  app.use(GlobalErrorHandling)
+
+
+  app.use(GlobalErrorHandling);
+
+  const port: number = Number(process.env.PORT) || 5000;
+
+  const server = app.listen(port, () => {
+    console.log(`🚀 Server running on port ${port}`);
+  });
+
+
+  intializationIo(server);
 };
 
 export default bootstrap;
